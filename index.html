@@ -67,30 +67,57 @@
 </div>
 
 <script>
-    function loadEmployeeDatalist() {
-      const list = document.getElementById('employeeCodeList');
-      list.innerHTML = '';
+const employeeMaster = [
+  { empCode: "11092", salesManagerName: "Manuj Nayar" },
+  { empCode: "12259", salesManagerName: "Mehta Vishal Dipakkumar" },
+  { empCode: "12760", salesManagerName: "Bhargavkumar Hemantkumar Shah" },
+  { empCode: "12810", salesManagerName: "Singh Aman Vimalkumar" },
+  { empCode: "12872", salesManagerName: "Soni Akash Vijaybhai" },
+  { empCode: "11709", salesManagerName: "Vicky Atulbhai Sejpal" },
+  { empCode: "12560", salesManagerName: "Vaidya Jagrut Dineshbhai" },
+  { empCode: "12345", salesManagerName: "Dalal Hardikkumar Hareshkumar" },
+  { empCode: "10818", salesManagerName: "Rajiv Ranjan Singh" },
+  { empCode: "11794", salesManagerName: "Abhishek Ojha" },
+  { empCode: "12255", salesManagerName: "Ajit Sarvottam Ranshur" },
+  { empCode: "12315", salesManagerName: "Ramchandra Kalyanrao Katkar" },
+  { empCode: "12697", salesManagerName: "Surbhi Pandey" },
+  { empCode: "11169", salesManagerName: "Deepak Ishwardas Sukhdeve" },
+  { empCode: "11283", salesManagerName: "Firoz Afzal" },
+  { empCode: "11940", salesManagerName: "Jitendra Gulabrao Patil" },
+  { empCode: "12120", salesManagerName: "Rahul Ashok Deshmukh" },
+  { empCode: "12130", salesManagerName: "Anand Baliram Neemgaonkar" },
+  { empCode: "12527", salesManagerName: "KHALID ANWAR" },
+  { empCode: "12835", salesManagerName: "Sayed Abbas Zakir Mandil" },
+  { empCode: "11882", salesManagerName: "Nilesh Apa Gaonkar" },
+  { empCode: "12346", salesManagerName: "Swapnil Wankar" }
+];
+</script>
 
-      employeeMaster.forEach(emp => {
-        const option = document.createElement('option');
-        option.value = emp.empCode;
-        option.label = emp.empCode + ' - ' + emp.salesManagerName;
-        list.appendChild(option);
-      });
-    }
+<script>
+  function loadEmployeeDatalist() {
+    const list = document.getElementById('employeeCodeList');
+    list.innerHTML = '';
 
-    function fillEmployeeDetails() {
-      const selectedCode = document.getElementById('employeeCodeInput').value.trim();
-      const emp = employeeMaster.find(x => String(x.empCode) === String(selectedCode));
-      document.getElementById('salesManagerName').value = emp ? emp.salesManagerName : '';
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      loadEmployeeDatalist();
-      document.getElementById('employeeCodeInput').addEventListener('input', fillEmployeeDetails);
-      document.getElementById('employeeCodeInput').addEventListener('change', fillEmployeeDetails);
+    employeeMaster.forEach(emp => {
+      const option = document.createElement('option');
+      option.value = emp.empCode;
+      option.label = emp.empCode + ' - ' + emp.salesManagerName;
+      list.appendChild(option);
     });
-  </script>
+  }
+
+  function fillEmployeeDetails() {
+    const selectedCode = document.getElementById('employeeCodeInput').value.trim();
+    const emp = employeeMaster.find(x => String(x.empCode) === String(selectedCode));
+    document.getElementById('salesManagerName').value = emp ? emp.salesManagerName : '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    loadEmployeeDatalist();
+    document.getElementById('employeeCodeInput').addEventListener('input', fillEmployeeDetails);
+    document.getElementById('employeeCodeInput').addEventListener('change', fillEmployeeDetails);
+  });
+</script>
 
   <div class="box">
     <h3>Dealer Information</h3>
