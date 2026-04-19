@@ -98,14 +98,39 @@ function showMsg(text, type='success') {
 }
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort(); }
 
+function jsonpRequest(action) {
+  return new Promise((resolve, reject) => {
+    const cb = 'cb_' + action + '_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    window[cb] = function(data) {
+      resolve(data);
+      cleanup();
+    };
+    function cleanup() {
+      try { delete window[cb]; } catch(e) {}
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    const script = document.createElement('script');
+    script.src = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + '&callback=' + cb;
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Failed to load ' + action));
+    };
+    document.body.appendChild(script);
+    setTimeout(() => {
+      if (window[cb]) {
+        cleanup();
+        reject(new Error('Request timeout for ' + action));
+      }
+    }, 15000);
+  });
+}
+
 async function loadMasters() {
   try {
-    const [locRes, dealerRes] = await Promise.all([
-      fetch(APPS_SCRIPT_URL + '?action=getLocationMaster'),
-      fetch(APPS_SCRIPT_URL + '?action=getDealerMaster')
+    const [locJson, dealerJson] = await Promise.all([
+      jsonpRequest('getLocationMaster'),
+      jsonpRequest('getDealerMaster')
     ]);
-    const locJson = await locRes.json();
-    const dealerJson = await dealerRes.json();
     if (!locJson.success || !dealerJson.success) throw new Error('Master data load failed');
     locationMaster = locJson.data || [];
     dealerMaster = dealerJson.data || [];
@@ -116,171 +141,28 @@ async function loadMasters() {
   }
 }
 
-function loadStates() {
-  const stateEl = document.getElementById('state');
-  stateEl.innerHTML = '<option value="">Select State</option>';
-  uniq(locationMaster.map(x => x.statename)).forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; stateEl.appendChild(o);
-  });
-}
-function onStateChange() {
-  const state = document.getElementById('state').value;
-  const districtEl = document.getElementById('district');
-  districtEl.innerHTML = '<option value="">Select District</option>';
-  document.getElementById('pincode').innerHTML = '<option value="">Select Pincode</option>';
-  document.getElementById('officeName').innerHTML = '<option value="">Select Office Name</option>';
-  resetDealerSection();
-  uniq(locationMaster.filter(x => x.statename === state).map(x => x.district)).forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; districtEl.appendChild(o);
-  });
-}
-function onDistrictChange() {
-  const state = document.getElementById('state').value;
-  const district = document.getElementById('district').value;
-  const pincodeEl = document.getElementById('pincode');
-  pincodeEl.innerHTML = '<option value="">Select Pincode</option>';
-  document.getElementById('officeName').innerHTML = '<option value="">Select Office Name</option>';
-  resetDealerSection();
-  uniq(locationMaster.filter(x => x.statename === state && x.district === district).map(x => String(x.pincode))).forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; pincodeEl.appendChild(o);
-  });
-}
-function filterPincodeOptions() {
-  const state = document.getElementById('state').value;
-  const district = document.getElementById('district').value;
-  const q = document.getElementById('pincodeSearch').value.trim();
-  const pincodeEl = document.getElementById('pincode');
-  pincodeEl.innerHTML = '<option value="">Select Pincode</option>';
-  uniq(locationMaster.filter(x => (!state || x.statename === state) && (!district || x.district === district) && (!q || String(x.pincode).includes(q))).map(x => String(x.pincode))).forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; pincodeEl.appendChild(o);
-  });
-}
-function onPincodeChange() {
-  const pin = document.getElementById('pincode').value;
-  const officeEl = document.getElementById('officeName');
-  officeEl.innerHTML = '<option value="">Select Office Name</option>';
-  uniq(locationMaster.filter(x => String(x.pincode) === String(pin)).map(x => x.officename)).forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; officeEl.appendChild(o);
-  });
-  loadDealersByPincode(pin);
-}
-function loadDealersByPincode(pin) {
-  const dealerSelect = document.getElementById('dealerSelect');
-  dealerSelect.innerHTML = '<option value="">Select Dealer</option>';
-  const matched = dealerMaster.filter(d => String(d.PIN).trim() === String(pin).trim());
-  matched.forEach((dealer, index) => {
-    const option = document.createElement('option');
-    option.value = 'existing_' + index;
-    option.textContent = `${dealer['Dealership Name'] || ''}`;
-    option.dataset.dealer = JSON.stringify(dealer);
-    dealerSelect.appendChild(option);
-  });
-  const addNew = document.createElement('option');
-  addNew.value = 'new';
-  addNew.textContent = 'Add New Dealer';
-  dealerSelect.appendChild(addNew);
-  clearDealerFields();
-  setExistingDealerMode(false);
-}
-function onDealerSelect() {
-  const dealerSelect = document.getElementById('dealerSelect');
-  const option = dealerSelect.options[dealerSelect.selectedIndex];
-  if (!option.value) {
-    clearDealerFields();
-    setExistingDealerMode(false);
-    return;
-  }
-  if (option.value === 'new') {
-    clearDealerFields();
-    setExistingDealerMode(false);
-    showMsg('Add New Dealer selected. All dealer fields are editable.');
-    return;
-  }
-  const dealer = JSON.parse(option.dataset.dealer || '{}');
-  document.getElementById('dealerName').value = dealer['Dealership Name'] || '';
-  document.getElementById('dealerAddress').value = dealer['Billing Address'] || '';
-  document.getElementById('ownerName').value = '';
-  document.getElementById('mobileNumber').value = '';
-  document.getElementById('dealerCategory').value = '';
-  setExistingDealerMode(true);
-  showMsg('Existing dealer selected. Dealer Name and Dealer Address auto-filled.');
-}
-function clearDealerFields() {
-  ['dealerName','ownerName','mobileNumber','dealerAddress'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('dealerCategory').value = '';
-}
-function setExistingDealerMode(isExisting) {
-  document.getElementById('dealerName').readOnly = isExisting;
-  document.getElementById('dealerAddress').readOnly = isExisting;
-  document.getElementById('dealerName').classList.toggle('readonly', isExisting);
-  document.getElementById('dealerAddress').classList.toggle('readonly', isExisting);
-  document.getElementById('ownerName').readOnly = false;
-  document.getElementById('mobileNumber').readOnly = false;
-  document.getElementById('dealerCategory').disabled = false;
-}
-function resetDealerSection() {
-  document.getElementById('dealerSelect').innerHTML = '<option value="">Select Dealer</option>';
-  clearDealerFields();
-  setExistingDealerMode(false);
-}
-function calcBrands() {
-  let total = 0;
-  brandIds.forEach(id => total += Number(document.getElementById(id).value || 0));
-  document.getElementById('brandTotal').value = total;
-  const counter = Number(document.getElementById('totalCounterSize').value || 0);
-  document.getElementById('othersCalculated').value = Math.max(counter - total, 0);
-}
-function validateForm() {
-  const required = ['state','district','pincode','officeName','dealerName','dealerAddress'];
-  for (const id of required) {
-    if (!String(document.getElementById(id).value || '').trim()) return false;
-  }
-  return true;
-}
+function loadStates() { const stateEl = document.getElementById('state'); stateEl.innerHTML = '<option value="">Select State</option>'; uniq(locationMaster.map(x => x.statename)).forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; stateEl.appendChild(o); }); }
+function onStateChange() { const state = document.getElementById('state').value; const districtEl = document.getElementById('district'); districtEl.innerHTML = '<option value="">Select District</option>'; document.getElementById('pincode').innerHTML = '<option value="">Select Pincode</option>'; document.getElementById('officeName').innerHTML = '<option value="">Select Office Name</option>'; resetDealerSection(); uniq(locationMaster.filter(x => x.statename === state).map(x => x.district)).forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; districtEl.appendChild(o); }); }
+function onDistrictChange() { const state = document.getElementById('state').value; const district = document.getElementById('district').value; const pincodeEl = document.getElementById('pincode'); pincodeEl.innerHTML = '<option value="">Select Pincode</option>'; document.getElementById('officeName').innerHTML = '<option value="">Select Office Name</option>'; resetDealerSection(); uniq(locationMaster.filter(x => x.statename === state && x.district === district).map(x => String(x.pincode))).forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; pincodeEl.appendChild(o); }); }
+function filterPincodeOptions() { const state = document.getElementById('state').value; const district = document.getElementById('district').value; const q = document.getElementById('pincodeSearch').value.trim(); const pincodeEl = document.getElementById('pincode'); pincodeEl.innerHTML = '<option value="">Select Pincode</option>'; uniq(locationMaster.filter(x => (!state || x.statename === state) && (!district || x.district === district) && (!q || String(x.pincode).includes(q))).map(x => String(x.pincode))).forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; pincodeEl.appendChild(o); }); }
+function onPincodeChange() { const pin = document.getElementById('pincode').value; const officeEl = document.getElementById('officeName'); officeEl.innerHTML = '<option value="">Select Office Name</option>'; uniq(locationMaster.filter(x => String(x.pincode) === String(pin)).map(x => x.officename)).forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; officeEl.appendChild(o); }); loadDealersByPincode(pin); }
+function loadDealersByPincode(pin) { const dealerSelect = document.getElementById('dealerSelect'); dealerSelect.innerHTML = '<option value="">Select Dealer</option>'; const matched = dealerMaster.filter(d => String(d.PIN).trim() === String(pin).trim()); matched.forEach((dealer, index) => { const option = document.createElement('option'); option.value = 'existing_' + index; option.textContent = `${dealer['Dealership Name'] || ''}`; option.dataset.dealer = JSON.stringify(dealer); dealerSelect.appendChild(option); }); const addNew = document.createElement('option'); addNew.value = 'new'; addNew.textContent = 'Add New Dealer'; dealerSelect.appendChild(addNew); clearDealerFields(); setExistingDealerMode(false); }
+function onDealerSelect() { const dealerSelect = document.getElementById('dealerSelect'); const option = dealerSelect.options[dealerSelect.selectedIndex]; if (!option.value) { clearDealerFields(); setExistingDealerMode(false); return; } if (option.value === 'new') { clearDealerFields(); setExistingDealerMode(false); showMsg('Add New Dealer selected. All dealer fields are editable.'); return; } const dealer = JSON.parse(option.dataset.dealer || '{}'); document.getElementById('dealerName').value = dealer['Dealership Name'] || ''; document.getElementById('dealerAddress').value = dealer['Billing Address'] || ''; document.getElementById('ownerName').value = ''; document.getElementById('mobileNumber').value = ''; document.getElementById('dealerCategory').value = ''; setExistingDealerMode(true); showMsg('Existing dealer selected. Dealer Name and Dealer Address auto-filled.'); }
+function clearDealerFields() { ['dealerName','ownerName','mobileNumber','dealerAddress'].forEach(id => document.getElementById(id).value = ''); document.getElementById('dealerCategory').value = ''; }
+function setExistingDealerMode(isExisting) { document.getElementById('dealerName').readOnly = isExisting; document.getElementById('dealerAddress').readOnly = isExisting; document.getElementById('dealerName').classList.toggle('readonly', isExisting); document.getElementById('dealerAddress').classList.toggle('readonly', isExisting); document.getElementById('ownerName').readOnly = false; document.getElementById('mobileNumber').readOnly = false; document.getElementById('dealerCategory').disabled = false; }
+function resetDealerSection() { document.getElementById('dealerSelect').innerHTML = '<option value="">Select Dealer</option>'; clearDealerFields(); setExistingDealerMode(false); }
+function calcBrands() { let total = 0; brandIds.forEach(id => total += Number(document.getElementById(id).value || 0)); document.getElementById('brandTotal').value = total; const counter = Number(document.getElementById('totalCounterSize').value || 0); document.getElementById('othersCalculated').value = Math.max(counter - total, 0); }
+function validateForm() { const required = ['state','district','pincode','officeName','dealerName','dealerAddress']; for (const id of required) { if (!String(document.getElementById(id).value || '').trim()) return false; } return true; }
 async function submitFinal() {
-  if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbyF1tvgY_QcxV9SwY9I9QJjJkQBnQtSmCqtRNrX8S2a8J_dX5wsFMDNwQImV-JsHIyO/exec') {
-    showMsg('Please paste your Apps Script Web App URL first.', 'error');
-    return;
-  }
-  if (!validateForm()) {
-    showMsg('Please fill required location and dealer details.', 'error');
-    return;
-  }
-  const submitBtn = document.getElementById('submitBtn');
-  submitBtn.disabled = true;
-  const payload = {
-    submittedAt: new Date().toISOString(),
-    state: document.getElementById('state').value,
-    district: document.getElementById('district').value,
-    pincode: document.getElementById('pincode').value,
-    officeName: document.getElementById('officeName').value,
-    dealerSelectedFromMaster: document.getElementById('dealerSelect').value.startsWith('existing_'),
-    isNewDealer: document.getElementById('dealerSelect').value === 'new',
-    dealerName: document.getElementById('dealerName').value,
-    ownerName: document.getElementById('ownerName').value,
-    mobileNumber: document.getElementById('mobileNumber').value,
-    dealerCategory: document.getElementById('dealerCategory').value,
-    dealerAddress: document.getElementById('dealerAddress').value,
-    totalCounterSize: document.getElementById('totalCounterSize').value,
-    daikinAssociation: document.getElementById('daikinAssociation').value,
-    brandContribution: Object.fromEntries(brandIds.map(id => [id, document.getElementById(id).value || '0'])),
-    brandTotal: document.getElementById('brandTotal').value,
-    othersCalculated: document.getElementById('othersCalculated').value
-  };
+  if (!validateForm()) { showMsg('Please fill required location and dealer details.', 'error'); return; }
+  const submitBtn = document.getElementById('submitBtn'); submitBtn.disabled = true;
+  const payload = { submittedAt: new Date().toISOString(), state: document.getElementById('state').value, district: document.getElementById('district').value, pincode: document.getElementById('pincode').value, officeName: document.getElementById('officeName').value, dealerSelectedFromMaster: document.getElementById('dealerSelect').value.startsWith('existing_'), isNewDealer: document.getElementById('dealerSelect').value === 'new', dealerName: document.getElementById('dealerName').value, ownerName: document.getElementById('ownerName').value, mobileNumber: document.getElementById('mobileNumber').value, dealerCategory: document.getElementById('dealerCategory').value, dealerAddress: document.getElementById('dealerAddress').value, totalCounterSize: document.getElementById('totalCounterSize').value, daikinAssociation: document.getElementById('daikinAssociation').value, brandContribution: Object.fromEntries(brandIds.map(id => [id, document.getElementById(id).value || '0'])), brandTotal: document.getElementById('brandTotal').value, othersCalculated: document.getElementById('othersCalculated').value };
   try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || json.error || 'Submit failed');
+    await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
     showMsg('Mapping submitted successfully.');
   } catch (err) {
-    showMsg('Submit failed: ' + err.message, 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
+    showMsg('Submit request sent. If data is not saved, redeploy Apps Script and test again.', 'error');
+  } finally { submitBtn.disabled = false; }
 }
 document.getElementById('state').addEventListener('change', onStateChange);
 document.getElementById('district').addEventListener('change', onDistrictChange);
