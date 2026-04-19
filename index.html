@@ -15,11 +15,11 @@
     textarea { min-height:80px; resize:vertical; }
     .section { border:1px solid #e6ebf1; border-radius:12px; padding:16px; margin-bottom:18px; }
     .muted { color:#667085; font-size:12px; }
-    .readonly { background:#f1f5f9; }
     .msg { display:none; padding:12px; border-radius:10px; margin-bottom:14px; }
     .success { display:block; background:#e8f7ee; color:#126a36; }
     .error { display:block; background:#fdecef; color:#a42843; }
     .btn { background:#01696f; color:#fff; font-weight:700; border:none; cursor:pointer; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#334155; font-size:12px; margin-top:8px; }
     @media (max-width:768px){ .grid,.grid3{ grid-template-columns:1fr; } }
   </style>
 </head>
@@ -27,41 +27,62 @@
 <div class="container">
   <h1>Daikin AC Market Mapping</h1>
   <div id="msg" class="msg"></div>
-  <div class="section"><h2>Location Mapping</h2><div class="grid">
-    <div><label>State</label><select id="state"><option value="">Select State</option></select></div>
-    <div><label>District</label><select id="district"><option value="">Select District</option></select></div>
-    <div><label>Search Pincode</label><input id="pincodeSearch" placeholder="Type pincode" /></div>
-    <div><label>Pincode</label><select id="pincode"><option value="">Select Pincode</option></select></div>
-    <div style="grid-column:1/-1"><label>Office Name</label><select id="officeName"><option value="">Select Office Name</option></select></div>
-  </div></div>
-  <div class="section"><h2>Dealer Selection</h2><label>Dealer List as per Pincode</label><select id="dealerSelect"><option value="">Select Dealer</option></select><div class="muted">For existing dealer, only Dealer Name and Dealer Address auto-fill. For Add New Dealer, all dealer fields stay editable.</div></div>
-  <div class="section"><h2>Dealer Information</h2><div class="grid">
-    <div><label>Dealer Name</label><input type="text" id="dealerName" placeholder="Dealer Name" /></div>
-    <div><label>Owner Name</label><input type="text" id="ownerName" placeholder="Owner Name" /></div>
-    <div><label>Contact Number</label><input type="text" id="mobileNumber" placeholder="Contact Number" maxlength="10" /></div>
-    <div><label>Dealer Category</label><select id="dealerCategory"><option value="">Select Category</option><option>ED</option><option>AC</option><option>HA</option><option>NR</option><option>RR</option><option>GT</option><option>DSP</option><option>DND</option><option>SSD</option></select></div>
-    <div style="grid-column:1/-1"><label>Dealer Address</label><textarea id="dealerAddress" placeholder="Dealer Address"></textarea></div>
-  </div></div>
-  <div class="section"><h2>Counter & Brand Mapping</h2><div class="grid3">
-    <div><label>Total AC Counter Size</label><input type="number" id="totalCounterSize" min="0" /></div>
-    <div><label>Daikin Association</label><select id="daikinAssociation"><option value="">Select</option><option>Y</option><option>N</option></select></div>
-    <div><label>Brand Total</label><input type="number" id="brandTotal" readonly class="readonly" /></div>
-    <div><label>Daikin</label><input type="number" id="daikin" min="0" value="0" /></div>
-    <div><label>Voltas</label><input type="number" id="voltas" min="0" value="0" /></div>
-    <div><label>LG</label><input type="number" id="lg" min="0" value="0" /></div>
-    <div><label>Panasonic</label><input type="number" id="panasonic" min="0" value="0" /></div>
-    <div><label>Samsung</label><input type="number" id="samsung" min="0" value="0" /></div>
-    <div><label>Hitachi</label><input type="number" id="hitachi" min="0" value="0" /></div>
-    <div><label>Bluestar</label><input type="number" id="bluestar" min="0" value="0" /></div>
-    <div><label>Carrier Toshiba</label><input type="number" id="carrierToshiba" min="0" value="0" /></div>
-    <div><label>Midea</label><input type="number" id="midea" min="0" value="0" /></div>
-    <div><label>MH</label><input type="number" id="mh" min="0" value="0" /></div>
-    <div><label>ME</label><input type="number" id="me" min="0" value="0" /></div>
-    <div><label>Godrej</label><input type="number" id="godrej" min="0" value="0" /></div>
-    <div><label>LLYOD</label><input type="number" id="llyod" min="0" value="0" /></div>
-    <div><label>Others Manual</label><input type="number" id="othersManual" min="0" value="0" /></div>
-    <div><label>Others Final</label><input type="number" id="othersCalculated" readonly class="readonly" /></div>
-  </div></div>
+
+  <div class="section">
+    <h2>Store Location</h2>
+    <div class="grid">
+      <div><label>Store Pincode</label><input id="storePincode" maxlength="6" placeholder="Enter 6-digit store pincode" /></div>
+      <div><label>Matched Pincode</label><input id="matchedPincode" readonly /></div>
+      <div><label>State</label><input id="state" readonly /></div>
+      <div><label>District</label><input id="district" readonly /></div>
+      <div style="grid-column:1/-1"><label>Office Name</label><select id="officeName"><option value="">Select Office Name</option></select></div>
+    </div>
+    <div class="muted">Enter store pincode directly. Location details and dealer list will load automatically for that pincode.</div>
+    <div class="pill" id="pinStatus">Waiting for pincode</div>
+  </div>
+
+  <div class="section">
+    <h2>Dealer Selection</h2>
+    <label>Dealer List as per Store Pincode</label>
+    <select id="dealerSelect"><option value="">Select Dealer</option></select>
+    <div class="muted">When you select an existing dealer, dealer details auto-fill and remain editable. If not available, choose Add New Dealer.</div>
+  </div>
+
+  <div class="section">
+    <h2>Dealer Information</h2>
+    <div class="grid">
+      <div><label>Dealer Name</label><input type="text" id="dealerName" placeholder="Dealer Name" /></div>
+      <div><label>Owner Name</label><input type="text" id="ownerName" placeholder="Owner Name" /></div>
+      <div><label>Contact Number</label><input type="text" id="mobileNumber" placeholder="Contact Number" maxlength="10" /></div>
+      <div><label>Dealer Category</label><select id="dealerCategory"><option value="">Select Category</option><option>ED</option><option>AC</option><option>HA</option><option>NR</option><option>RR</option><option>GT</option><option>DSP</option><option>DND</option><option>SSD</option></select></div>
+      <div style="grid-column:1/-1"><label>Dealer Address</label><textarea id="dealerAddress" placeholder="Dealer Address"></textarea></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Counter & Brand Mapping</h2>
+    <div class="grid3">
+      <div><label>Total AC Counter Size</label><input type="number" id="totalCounterSize" min="0" /></div>
+      <div><label>Daikin Association</label><select id="daikinAssociation"><option value="">Select</option><option>Y</option><option>N</option></select></div>
+      <div><label>Brand Total</label><input type="number" id="brandTotal" readonly /></div>
+      <div><label>Daikin</label><input type="number" id="daikin" min="0" value="0" /></div>
+      <div><label>Voltas</label><input type="number" id="voltas" min="0" value="0" /></div>
+      <div><label>LG</label><input type="number" id="lg" min="0" value="0" /></div>
+      <div><label>Panasonic</label><input type="number" id="panasonic" min="0" value="0" /></div>
+      <div><label>Samsung</label><input type="number" id="samsung" min="0" value="0" /></div>
+      <div><label>Hitachi</label><input type="number" id="hitachi" min="0" value="0" /></div>
+      <div><label>Bluestar</label><input type="number" id="bluestar" min="0" value="0" /></div>
+      <div><label>Carrier Toshiba</label><input type="number" id="carrierToshiba" min="0" value="0" /></div>
+      <div><label>Midea</label><input type="number" id="midea" min="0" value="0" /></div>
+      <div><label>MH</label><input type="number" id="mh" min="0" value="0" /></div>
+      <div><label>ME</label><input type="number" id="me" min="0" value="0" /></div>
+      <div><label>Godrej</label><input type="number" id="godrej" min="0" value="0" /></div>
+      <div><label>LLYOD</label><input type="number" id="llyod" min="0" value="0" /></div>
+      <div><label>Others Manual</label><input type="number" id="othersManual" min="0" value="0" /></div>
+      <div><label>Others Final</label><input type="number" id="othersCalculated" readonly /></div>
+    </div>
+  </div>
+
   <button class="btn" onclick="submitFinal()">Submit Mapping</button>
 </div>
 <script>
@@ -69,24 +90,22 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzs66EcnWLcnqI7
 let locationMaster = [];
 let dealerMaster = [];
 const brandIds = ['daikin','voltas','lg','panasonic','samsung','hitachi','bluestar','carrierToshiba','midea','mh','me','godrej','llyod','othersManual'];
+
 function showMsg(text, type='success') { const el=document.getElementById('msg'); el.className='msg ' + (type==='error'?'error':'success'); el.textContent=text; }
+function setPinStatus(text) { document.getElementById('pinStatus').textContent = text; }
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort(); }
-function loadJsonp(url) { return new Promise((resolve,reject)=>{ const cb='jsonp_'+Date.now()+'_'+Math.floor(Math.random()*10000); let done=false; window[cb]=(data)=>{ done=true; resolve(data); cleanup(); }; function cleanup(){ try{ delete window[cb]; }catch(e){} if(script.parentNode) script.parentNode.removeChild(script); } const script=document.createElement('script'); script.src=url + (url.includes('?')?'&':'?') + 'callback=' + cb; script.onerror=()=>{ if(!done) reject(new Error('Script load failed')); cleanup(); }; document.body.appendChild(script); setTimeout(()=>{ if(!done){ reject(new Error('Request timeout')); cleanup(); } },20000); }); }
-async function loadMasters() { try { const loc=await loadJsonp(APPS_SCRIPT_URL + '?action=getLocationMaster'); if(!loc.success) throw new Error(loc.message || 'Location master error'); locationMaster=loc.data||[]; const dealer=await loadJsonp(APPS_SCRIPT_URL + '?action=getDealerMaster'); if(!dealer.success) throw new Error(dealer.message || 'Dealer master error'); dealerMaster=dealer.data||[]; loadStates(); showMsg('Master data loaded successfully.'); } catch(err) { showMsg('Unable to load master data: ' + err.message, 'error'); } }
-function loadStates() { const el=document.getElementById('state'); el.innerHTML='<option value="">Select State</option>'; uniq(locationMaster.map(x=>x.statename)).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); }); }
-function onStateChange() { const state=document.getElementById('state').value; const districtEl=document.getElementById('district'); districtEl.innerHTML='<option value="">Select District</option>'; document.getElementById('pincode').innerHTML='<option value="">Select Pincode</option>'; document.getElementById('officeName').innerHTML='<option value="">Select Office Name</option>'; resetDealerSection(); uniq(locationMaster.filter(x=>x.statename===state).map(x=>x.district)).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; districtEl.appendChild(o); }); }
-function onDistrictChange() { const state=document.getElementById('state').value; const district=document.getElementById('district').value; const pincodeEl=document.getElementById('pincode'); pincodeEl.innerHTML='<option value="">Select Pincode</option>'; document.getElementById('officeName').innerHTML='<option value="">Select Office Name</option>'; resetDealerSection(); uniq(locationMaster.filter(x=>x.statename===state && x.district===district).map(x=>String(x.pincode))).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; pincodeEl.appendChild(o); }); }
-function filterPincodeOptions() { const state=document.getElementById('state').value; const district=document.getElementById('district').value; const q=document.getElementById('pincodeSearch').value.trim(); const pincodeEl=document.getElementById('pincode'); pincodeEl.innerHTML='<option value="">Select Pincode</option>'; uniq(locationMaster.filter(x=>(!state || x.statename===state) && (!district || x.district===district) && (!q || String(x.pincode).includes(q))).map(x=>String(x.pincode))).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; pincodeEl.appendChild(o); }); }
-function onPincodeChange() { const pin=document.getElementById('pincode').value; const officeEl=document.getElementById('officeName'); officeEl.innerHTML='<option value="">Select Office Name</option>'; uniq(locationMaster.filter(x=>String(x.pincode)===String(pin)).map(x=>x.officename)).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; officeEl.appendChild(o); }); loadDealersByPincode(pin); }
-function loadDealersByPincode(pin) { const dealerSelect=document.getElementById('dealerSelect'); dealerSelect.innerHTML='<option value="">Select Dealer</option>'; const matched=dealerMaster.filter(d=>String(d.PIN).trim()===String(pin).trim()); matched.forEach((dealer,index)=>{ const option=document.createElement('option'); option.value='existing_'+index; option.textContent=dealer['Dealership Name'] || ''; option.dataset.dealer=JSON.stringify(dealer); dealerSelect.appendChild(option); }); const addNew=document.createElement('option'); addNew.value='new'; addNew.textContent='Add New Dealer'; dealerSelect.appendChild(addNew); clearDealerFields(); setExistingDealerMode(false); }
-function onDealerSelect() { const dealerSelect=document.getElementById('dealerSelect'); const option=dealerSelect.options[dealerSelect.selectedIndex]; if(!option.value){ clearDealerFields(); setExistingDealerMode(false); return; } if(option.value==='new'){ clearDealerFields(); setExistingDealerMode(false); showMsg('Add New Dealer selected. All dealer fields are editable.'); return; } const dealer=JSON.parse(option.dataset.dealer || '{}'); document.getElementById('dealerName').value=dealer['Dealership Name'] || ''; document.getElementById('dealerAddress').value=dealer['Billing Address'] || ''; document.getElementById('ownerName').value=''; document.getElementById('mobileNumber').value=''; document.getElementById('dealerCategory').value=''; setExistingDealerMode(true); showMsg('Existing dealer selected. Dealer Name and Dealer Address auto-filled.'); }
+function clearLocationFields() { document.getElementById('matchedPincode').value=''; document.getElementById('state').value=''; document.getElementById('district').value=''; document.getElementById('officeName').innerHTML='<option value="">Select Office Name</option>'; }
 function clearDealerFields() { ['dealerName','ownerName','mobileNumber','dealerAddress'].forEach(id=>document.getElementById(id).value=''); document.getElementById('dealerCategory').value=''; }
-function setExistingDealerMode(isExisting) { document.getElementById('dealerName').readOnly=isExisting; document.getElementById('dealerAddress').readOnly=isExisting; document.getElementById('dealerName').classList.toggle('readonly',isExisting); document.getElementById('dealerAddress').classList.toggle('readonly',isExisting); document.getElementById('ownerName').readOnly=false; document.getElementById('mobileNumber').readOnly=false; document.getElementById('dealerCategory').disabled=false; }
-function resetDealerSection() { document.getElementById('dealerSelect').innerHTML='<option value="">Select Dealer</option>'; clearDealerFields(); setExistingDealerMode(false); }
+function resetDealerSection() { document.getElementById('dealerSelect').innerHTML='<option value="">Select Dealer</option>'; clearDealerFields(); }
+function loadJsonp(url) { return new Promise((resolve,reject)=>{ const cb='jsonp_'+Date.now()+'_'+Math.floor(Math.random()*10000); let done=false; window[cb]=(data)=>{ done=true; resolve(data); cleanup(); }; function cleanup(){ try{ delete window[cb]; }catch(e){} if(script.parentNode) script.parentNode.removeChild(script); } const script=document.createElement('script'); script.src=url + (url.includes('?')?'&':'?') + 'callback=' + cb; script.onerror=()=>{ if(!done) reject(new Error('Script load failed')); cleanup(); }; document.body.appendChild(script); setTimeout(()=>{ if(!done){ reject(new Error('Request timeout')); cleanup(); } },20000); }); }
+async function loadMasters() { try { const loc=await loadJsonp(APPS_SCRIPT_URL + '?action=getLocationMaster'); const dealer=await loadJsonp(APPS_SCRIPT_URL + '?action=getDealerMaster'); if(!loc.success || !dealer.success) throw new Error('Master load failed'); locationMaster=loc.data||[]; dealerMaster=dealer.data||[]; setPinStatus('Master loaded. Enter store pincode'); showMsg('Master data loaded successfully.'); } catch(err) { showMsg('Unable to load master data: ' + err.message,'error'); setPinStatus('Master load failed'); } }
+function onStorePincodeInput() { const pin=(document.getElementById('storePincode').value||'').replace(/\D/g,'').slice(0,6); document.getElementById('storePincode').value=pin; clearLocationFields(); resetDealerSection(); if(pin.length<6){ setPinStatus('Enter full 6-digit pincode'); return; } const matches=locationMaster.filter(x=>String(x.pincode)===pin); if(!matches.length){ setPinStatus('Pincode not found in location master'); showMsg('This pincode is not available in LocationMaster.','error'); return; } const first=matches[0]; document.getElementById('matchedPincode').value=pin; document.getElementById('state').value=first.statename || ''; document.getElementById('district').value=first.district || ''; const officeEl=document.getElementById('officeName'); officeEl.innerHTML='<option value="">Select Office Name</option>'; uniq(matches.map(x=>x.officename)).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; officeEl.appendChild(o); }); loadDealersByPincode(pin); setPinStatus('Pincode matched. Select office and dealer'); }
+function loadDealersByPincode(pin) { const dealerSelect=document.getElementById('dealerSelect'); dealerSelect.innerHTML='<option value="">Select Dealer</option>'; const matched=dealerMaster.filter(d=>String(d.PIN).trim()===String(pin).trim()); matched.forEach((dealer,index)=>{ const option=document.createElement('option'); option.value='existing_'+index; option.textContent=dealer['Dealership Name'] || ''; option.dataset.dealer=JSON.stringify(dealer); dealerSelect.appendChild(option); }); const addNew=document.createElement('option'); addNew.value='new'; addNew.textContent='Add New Dealer'; dealerSelect.appendChild(addNew); clearDealerFields(); }
+function onDealerSelect() { const dealerSelect=document.getElementById('dealerSelect'); const option=dealerSelect.options[dealerSelect.selectedIndex]; if(!option.value){ clearDealerFields(); return; } if(option.value==='new'){ clearDealerFields(); showMsg('Add New Dealer selected. Enter all dealer details manually.'); return; } const dealer=JSON.parse(option.dataset.dealer || '{}'); document.getElementById('dealerName').value=dealer['Dealership Name'] || ''; document.getElementById('dealerAddress').value=dealer['Billing Address'] || ''; showMsg('Dealer details auto-filled. You can edit if needed.'); }
 function calcBrands() { let total=0; brandIds.forEach(id=> total += Number(document.getElementById(id).value || 0)); document.getElementById('brandTotal').value=total; const counter=Number(document.getElementById('totalCounterSize').value || 0); document.getElementById('othersCalculated').value=Math.max(counter-total,0); }
-function validateForm() { const required=['state','district','pincode','officeName','dealerName','dealerAddress']; for(const id of required){ if(!String(document.getElementById(id).value || '').trim()) return false; } return true; }
-async function submitFinal() { if(!validateForm()){ showMsg('Please fill required location and dealer details.','error'); return; } const payload={ submittedAt:new Date().toISOString(), state:document.getElementById('state').value, district:document.getElementById('district').value, pincode:document.getElementById('pincode').value, officeName:document.getElementById('officeName').value, dealerSelectedFromMaster:document.getElementById('dealerSelect').value.startsWith('existing_'), isNewDealer:document.getElementById('dealerSelect').value==='new', dealerName:document.getElementById('dealerName').value, ownerName:document.getElementById('ownerName').value, mobileNumber:document.getElementById('mobileNumber').value, dealerCategory:document.getElementById('dealerCategory').value, dealerAddress:document.getElementById('dealerAddress').value, totalCounterSize:document.getElementById('totalCounterSize').value, daikinAssociation:document.getElementById('daikinAssociation').value, brandContribution:Object.fromEntries(brandIds.map(id=>[id, document.getElementById(id).value || '0'])), brandTotal:document.getElementById('brandTotal').value, othersCalculated:document.getElementById('othersCalculated').value }; try { await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) }); showMsg('Mapping submitted successfully.'); } catch(err) { showMsg('Submit sent but browser could not confirm response. Check Responses sheet.','error'); } }
-document.getElementById('state').addEventListener('change', onStateChange); document.getElementById('district').addEventListener('change', onDistrictChange); document.getElementById('pincodeSearch').addEventListener('input', filterPincodeOptions); document.getElementById('pincode').addEventListener('change', onPincodeChange); document.getElementById('dealerSelect').addEventListener('change', onDealerSelect); brandIds.concat(['totalCounterSize']).forEach(id=>document.getElementById(id).addEventListener('input', calcBrands)); loadMasters();
+function validateForm() { const required=['storePincode','matchedPincode','officeName','dealerName','dealerAddress']; for(const id of required){ if(!String(document.getElementById(id).value || '').trim()) return false; } return true; }
+async function submitFinal() { if(!validateForm()){ showMsg('Please fill pincode, office, dealer name and dealer address.','error'); return; } const payload={ submittedAt:new Date().toISOString(), storePincode:document.getElementById('storePincode').value, state:document.getElementById('state').value, district:document.getElementById('district').value, pincode:document.getElementById('matchedPincode').value, officeName:document.getElementById('officeName').value, dealerSelectedFromMaster:document.getElementById('dealerSelect').value.startsWith('existing_'), isNewDealer:document.getElementById('dealerSelect').value==='new', dealerName:document.getElementById('dealerName').value, ownerName:document.getElementById('ownerName').value, mobileNumber:document.getElementById('mobileNumber').value, dealerCategory:document.getElementById('dealerCategory').value, dealerAddress:document.getElementById('dealerAddress').value, totalCounterSize:document.getElementById('totalCounterSize').value, daikinAssociation:document.getElementById('daikinAssociation').value, brandContribution:Object.fromEntries(brandIds.map(id=>[id, document.getElementById(id).value || '0'])), brandTotal:document.getElementById('brandTotal').value, othersCalculated:document.getElementById('othersCalculated').value }; try { await fetch(APPS_SCRIPT_URL, { method:'POST', body:JSON.stringify(payload) }); showMsg('Mapping submitted successfully.'); } catch(err) { showMsg('Submit sent. If needed, check Responses sheet.','error'); } }
+document.getElementById('storePincode').addEventListener('input', onStorePincodeInput); document.getElementById('dealerSelect').addEventListener('change', onDealerSelect); brandIds.concat(['totalCounterSize']).forEach(id=>document.getElementById(id).addEventListener('input', calcBrands)); loadMasters();
 </script>
 </body>
 </html>
